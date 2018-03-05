@@ -50,7 +50,7 @@ define qemuarch
 endef
 # Convert GOARCH to naming scheme of https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63
 define giteaarch
-	$(shell echo $(1) | sed -e "s|arm32v5|arm-5|g" sed -e "s|arm32v6|arm-6|g" sed -e "s|arm32v7|arm-7|g" -e "s|arm64.*|arm64|g" -e "s|i386|386|g" )
+	$(shell echo $(1) | sed -e "s|arm32v5|arm-5|g" -e "s|arm32v6|arm-6|g" -e "s|arm32v7|arm-7|g" -e "s|arm64.*|arm64|g" -e "s|i386|386|g")
 endef
 # Convert Docker manifest entries according to https://docs.docker.com/registry/spec/manifest-v2-2/#manifest-list-field-descriptions
 define convert_variants
