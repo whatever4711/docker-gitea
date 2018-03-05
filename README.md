@@ -2,16 +2,16 @@
 
 [![](https://images.microbadger.com/badges/version/whatever4711/gogs.svg)](https://microbadger.com/images/whatever4711/gogs "Get your own version badge on microbadger.com")  [![](https://images.microbadger.com/badges/image/whatever4711/gogs.svg)](https://microbadger.com/images/whatever4711/gogs "Get your own image badge on microbadger.com")
 
-# Gogs in a Container
+# Gitea in a Container
 
-Currently, this is a docker image based on Alpine Linux, which has [Gogs](http://gogs.io/) installed.
+Currently, this is a docker image based on Alpine Linux, which has [Gitea](https://gitea.io/) installed.
 
 ## Supported Architectures
 This multiarch image supports `amd64`, `i386`, `arm32v6`, and `arm64v8` on Linux
 
 ## Starting the Container
-`docker run -d --name gogs -p 3000:3000 -p 2222:22 whatever4711/gogs`
-Thereafter you can access gogs on http://localhost:3000
+`docker run -d --name gitea -p 3000:3000 -p 2222:22 whatever4711/gitea`
+Thereafter you can access gitea on http://localhost:3000
 
 ## With DB and Traefik (Multiarch)
 
@@ -44,7 +44,7 @@ services:
       - traefik.enable=false
 
   gogs:
-    image: whatever4711/gogs
+    image: whatever4711/gitea
     depends_on:
       - postgres
     volumes:
@@ -55,9 +55,9 @@ services:
       - frontend
       - backend
     labels:
-      - traefik.backend=gogs
+      - traefik.backend=gitea
       - traefik.port=3000
-      - traefik.frontend.rule=Host:gogs.localdomain
+      - traefik.frontend.rule=Host:gitea.localdomain
       - traefik.docker.network=dockergogs_frontend
 
   traefik:
