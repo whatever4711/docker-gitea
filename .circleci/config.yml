@@ -44,10 +44,10 @@ jobs:
     steps:
       - checkout
       - run: make manifest
-#  badge:
-#    machine: true
-#    steps:
-#      - run: curl -X POST https://hooks.microbadger.com/images/whatever4711/gogs/ZUFTloCr5m1XLN1dsHAsuHZj5Fc=
+  badge:
+    machine: true
+    steps:
+      - run: curl -X POST https://hooks.microbadger.com/images/whatever4711/gitea/2oxGzMVZlKSBC9xolckllXvTm4E=
 
 workflows:
   version: 2
@@ -90,9 +90,9 @@ workflows:
           filters:
             tags:
               only: /.*/
-#      - badge:
-#          requires:
-#            - manifest
-#          filters:
-#            tags:
-#              only: /.*/
+      - badge:
+          requires:
+            - manifest
+          filters:
+            tags:
+              only: /.*/

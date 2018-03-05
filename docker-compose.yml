@@ -17,9 +17,9 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=gogs
+      - POSTGRES_USER=gitea
       - POSTGRES_PASSWORD=test
-      - POSTGRES_DB=gogs
+      - POSTGRES_DB=gitea
     labels:
       - traefik.enable=false
 
@@ -29,7 +29,6 @@ services:
       - postgres
     volumes:
       - git:/data
-      - ./app.ini:/app/gogs/custom/conf/app.ini
     ports:
       - 22:22
     networks:
