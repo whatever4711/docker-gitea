@@ -1,0 +1,58 @@
+version: '3'
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+
+volumes:
+  git:
+  db:
+
+services:
+  postgres:
+    image: postgres:alpine
+    networks:
+      - backend
+    volumes:
+      - db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gogs
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=gogs
+    labels:
+      - traefik.enable=false
+
+  gogs:
+    image: whatever4711/gitea
+    depends_on:
+      - postgres
+    volumes:
+      - git:/data
+      - ./app.ini:/app/gogs/custom/conf/app.ini
+    ports:
+      - 22:22
+    networks:
+      - frontend
+      - backend
+    labels:
+      - traefik.backend=gogs
+      - traefik.port=3000
+      - traefik.frontend.rule=Host:gogs.localdomain
+      - traefik.docker.network=dockergogs_frontend
+
+  traefik:
+    image: traefik
+    command: --docker --docker.domain=localdomain --docker.watch --web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - frontend
+    labels:
+      - traefik.backend=traefik
+      - traefik.port=8080
+      - traefik.frontend.rule=Host:traefik.localdomain
+      - traefik.docker.network=dockergogs_frontend

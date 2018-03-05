@@ -1,0 +1,98 @@
+version: 2
+jobs:
+  update:
+    machine: true
+    steps:
+      - run: echo "Updating Docker engine to have multi-stage builds"
+      - run: sudo service docker stop
+      - run: curl -fsSL https://get.docker.com/ | sudo sh
+      - run: docker version
+  build_amd64:
+    working_directory: ~/docker-gogs
+    machine: true
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: make ARCHITECTURES=amd64
+      - run: make ARCHITECTURES=amd64 push
+  build_i386:
+    working_directory: ~/docker-gogs
+    machine: true
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: make ARCHITECTURES=i386
+      - run: make ARCHITECTURES=i386 push
+  build_arm32v6:
+    working_directory: ~/docker-gogs
+    machine: true
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: make ARCHITECTURES=arm32v6
+      - run: make ARCHITECTURES=arm32v6 push
+  build_arm64v8:
+    working_directory: ~/docker-gogs
+    machine: true
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: make ARCHITECTURES=arm64v8
+      - run: make ARCHITECTURES=arm64v8 push
+  manifest:
+    machine: true
+    steps:
+      - checkout
+      - run: make manifest
+#  badge:
+#    machine: true
+#    steps:
+#      - run: curl -X POST https://hooks.microbadger.com/images/whatever4711/gogs/ZUFTloCr5m1XLN1dsHAsuHZj5Fc=
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - update:
+          filters:
+            tags:
+              only: /.*/
+      - build_amd64:
+          requires:
+            - update
+          filters:
+            tags:
+              only: /.*/
+      - build_i386:
+          requires:
+            - update
+          filters:
+            tags:
+              only: /.*/
+      - build_arm32v6:
+          requires:
+            - update
+          filters:
+            tags:
+              only: /.*/
+      - build_arm64v8:
+          requires:
+            - update
+          filters:
+            tags:
+              only: /.*/
+      - manifest:
+          requires:
+            - build_amd64
+            - build_i386
+            - build_arm32v6
+            - build_arm64v8
+          filters:
+            tags:
+              only: /.*/
+#      - badge:
+#          requires:
+#            - manifest
+#          filters:
+#            tags:
+#              only: /.*/
