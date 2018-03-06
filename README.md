@@ -43,7 +43,7 @@ services:
     labels:
       - traefik.enable=false
 
-  gogs:
+  gitea:
     image: whatever4711/gitea
     depends_on:
       - postgres
@@ -58,7 +58,7 @@ services:
       - traefik.backend=gitea
       - traefik.port=3000
       - traefik.frontend.rule=Host:gitea.localdomain
-      - traefik.docker.network=dockergogs_frontend
+      - traefik.docker.network=dockergitea_frontend
 
   traefik:
     image: traefik
@@ -74,5 +74,5 @@ services:
       - traefik.backend=traefik
       - traefik.port=8080
       - traefik.frontend.rule=Host:traefik.localdomain
-      - traefik.docker.network=dockergogs_frontend
+      - traefik.docker.network=dockergitea_frontend
 ```

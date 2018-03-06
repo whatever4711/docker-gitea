@@ -23,22 +23,25 @@ services:
     labels:
       - traefik.enable=false
 
-  gogs:
+  gitea:
     image: whatever4711/gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
     depends_on:
       - postgres
     volumes:
       - git:/data
     ports:
-      - 22:22
+      - "2222:22"
     networks:
       - frontend
       - backend
     labels:
-      - traefik.backend=gogs
+      - traefik.backend=gitea
       - traefik.port=3000
-      - traefik.frontend.rule=Host:gogs.localdomain
-      - traefik.docker.network=dockergogs_frontend
+      - traefik.frontend.rule=Host:gitea.localdomain
+      - traefik.docker.network=dockergitea_frontend
 
   traefik:
     image: traefik
@@ -46,12 +49,12 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - 80:80
-      - 443:443
+      - "80:80"
+      - "443:443"
     networks:
       - frontend
     labels:
       - traefik.backend=traefik
       - traefik.port=8080
       - traefik.frontend.rule=Host:traefik.localdomain
-      - traefik.docker.network=dockergogs_frontend
+      - traefik.docker.network=dockergitea_frontend
