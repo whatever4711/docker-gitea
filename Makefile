@@ -60,14 +60,16 @@ manifest:
 	@rm -f docker
 
 test:
-	@$(foreach arch,$(ARCHITECTURES), docker run \
-			--publish=3000:3000 \
-			--detach=true \
-			--name=gitea \
-			$(REPO):linux-$(arch)-$(TAG); \
+	@docker network create -d bridge trial
+	@$(foreach arch,$(ARCHITECTURES), \
+			docker run --network trial -p 3000:3000 -d \
+			--name=gitea $(REPO):linux-$(arch)-$(TAG); \
 			sleep 10; \
-			curl -sSL --retry 10 --retry-delay 5 localhost:3000 | grep Gitea; \
+			docker run --network trial \
+				jwilder/dockerize dockerize -wait tcp://gitea:3000 -timeout 300s; \
+			curl -sSL --retry 10 --retry-delay 10 localhost:3000 | grep gitea; \
 			docker rm -f gitea;)
+	@docker network rm trial
 
 # Needed convertions for different architecture naming schemes
 # Convert qemu archs to naming scheme of https://github.com/multiarch/qemu-user-static/releases

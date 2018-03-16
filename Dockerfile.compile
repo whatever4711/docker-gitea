@@ -8,7 +8,7 @@ RUN git clone --branch ${VERSION} --depth 1 https://github.com/go-gitea/gitea.gi
 WORKDIR ${GOPATH}/src/code.gitea.io/gitea
 
 RUN export PATH=$PATH:/go/bin/ && \
-    make clean generate release-dirs release-linux release-copy release-check
+    make clean generate release-dirs release-linux release-check
 
 
 FROM alpine

@@ -16,7 +16,7 @@ RUN if [ ! -d "/build" ]; then \
     git clone --branch ${VERSION} --depth 1 https://github.com/go-gitea/gitea.git ${GOPATH}/src/code.gitea.io/gitea; \
     cd ${GOPATH}/src/code.gitea.io/gitea; \
     export PATH=$PATH:/go/bin/ && \
-    make clean generate release-dirs release-linux release-copy release-check \
+    make clean generate release-dirs release-linux release-check && \
     cp -r /go/src/code.gitea.io/gitea/docker /docker; \
     fi
 
