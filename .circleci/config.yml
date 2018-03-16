@@ -20,16 +20,16 @@ load_image_from_cache: &load_image_from_cache
 
 jobs:
   compile_go:
-  <<: *defaults
-  steps:
-    - checkout
-    - run:
-        name: Do the compile steps
-        command: |
-          make BUILD_BASE=base base
-          mkdir -p docker-cache
-          docker save -o docker-cache/base.tar base
-    - *save_docker_cache
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Do the compile steps
+          command: |
+            make BUILD_BASE=base base
+            mkdir -p docker-cache
+            docker save -o docker-cache/base.tar base
+      - *save_docker_cache
   build_amd64:
     <<: *defaults
     steps:
