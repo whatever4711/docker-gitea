@@ -1,11 +1,16 @@
 ARCHITECTURES = amd64 i386 arm32v6 arm64v8
 IMAGE_TARGET = alpine
 MULTIARCH = multiarch/qemu-user-static:register
+QEMU_VERSION=v2.11.0
 VERSION = $(shell cat VERSION)
+BUILD_TAGS = sqlite
 #DOCKER_USER = test
 #DOCKER_PASS = test
 ifeq ($(REPO),)
   REPO = gitea
+endif
+ifeq ($(BUILD_BASE),)
+  BUILD_BASE = karalabe/xgo-latest
 endif
 ifeq ($(CIRCLE_TAG),)
 	TAG = latest
@@ -18,8 +23,10 @@ all: $(ARCHITECTURES)
 $(ARCHITECTURES):
 	@docker run --rm --privileged $(MULTIARCH) --reset
 	@docker build \
+			--build-arg BUILD_BASE=$(BUILD_BASE) \
 			--build-arg IMAGE_TARGET=$@/$(IMAGE_TARGET) \
 			--build-arg QEMU=$(strip $(call qemuarch,$@)) \
+			--build-arg QEMU_VERSION=$(QEMU_VERSION) \
 			--build-arg ARCH=$@ \
 			--build-arg GITEA_ARCH=$(strip $(call giteaarch,$@)) \
 			--build-arg BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
@@ -27,6 +34,12 @@ $(ARCHITECTURES):
 			--build-arg VCS_URL=$(shell git config --get remote.origin.url) \
 			--build-arg VERSION=$(VERSION) \
 			-t $(REPO):linux-$@-$(TAG) .
+
+base:
+	@docker build \
+			--build-arg VERSION=$(VERSION) \
+			--build-arg TAGS=$(BUILD_TAGS) \
+			-f Dockerfile.compile -t $(BUILD_BASE) .
 
 push:
 	@docker login -u $(DOCKER_USER) -p $(DOCKER_PASS)
@@ -37,11 +50,24 @@ manifest:
 	@wget -O docker https://6582-88013053-gh.circle-artifacts.com/1/work/build/docker-linux-amd64
 	@chmod +x docker
 	@./docker login -u $(DOCKER_USER) -p $(DOCKER_PASS)
-	@./docker manifest create $(REPO):$(TAG) $(foreach arch,$(ARCHITECTURES), $(REPO):linux-$(arch)-$(TAG)) --amend
-	@$(foreach arch,$(ARCHITECTURES), ./docker manifest annotate $(REPO):$(TAG) $(REPO):linux-$(arch)-$(TAG) --os linux $(strip $(call convert_variants,$(arch)));)
+	@./docker manifest create $(REPO):$(TAG) \
+			$(foreach arch,$(ARCHITECTURES), $(REPO):linux-$(arch)-$(TAG)) --amend
+	@$(foreach arch,$(ARCHITECTURES), ./docker manifest annotate \
+			$(REPO):$(TAG) $(REPO):linux-$(arch)-$(TAG) \
+			--os linux $(strip $(call convert_variants,$(arch)));)
 	@./docker manifest push $(REPO):$(TAG)
 	@./docker logout
 	@rm -f docker
+
+test:
+	@$(foreach arch,$(ARCHITECTURES), docker run \
+			--publish=3000:3000 \
+			--detach=true \
+			--name=gitea \
+			$(REPO):linux-$(arch)-$(TAG); \
+			sleep 10; \
+			curl -sSL --retry 10 --retry-delay 5 localhost:3000 | grep Gitea; \
+			docker rm -f gitea;)
 
 # Needed convertions for different architecture naming schemes
 # Convert qemu archs to naming scheme of https://github.com/multiarch/qemu-user-static/releases

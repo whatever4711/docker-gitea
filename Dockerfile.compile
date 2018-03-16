@@ -1,0 +1,17 @@
+FROM karalabe/xgo-latest:latest as build
+ARG VERSION=master
+ARG TAGS="sqlite"
+ENV TAGS "bindata $TAGS"
+
+WORKDIR ${GOPATH}/src/code.gitea.io
+RUN git clone --branch ${VERSION} --depth 1 https://github.com/go-gitea/gitea.git
+WORKDIR ${GOPATH}/src/code.gitea.io/gitea
+
+RUN export PATH=$PATH:/go/bin/ && \
+    make clean generate release-dirs release-linux release-copy release-check
+
+
+FROM alpine
+
+COPY --from=build /build /build
+COPY --from=build /go/src/code.gitea.io/gitea/docker /docker
