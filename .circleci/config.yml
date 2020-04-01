@@ -1,141 +1,155 @@
-version: 2
+# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
 
-defaults: &defaults
-  working_directory: ~/docker-gitea
-  machine: true
+description: |
+  Install/configure docker with buildx to
+  cross-compile docker images and deploy them
 
-save_docker_cache: &save_docker_cache
-  save_cache:
-    key: compiled-{{ .Revision }}
-    paths: docker-cache
+commands:
+  recursive-checkout:
+    steps:
+      - checkout
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
+  update-docker:
+    parameters:
+      experimental:
+        description: "Setting Docker engine and client to experimental"
+        type: boolean
+        default: true
+    steps:
+      - run:
+          name: "Remove existing Docker installation"
+          command: |
+            sudo apt-get update -qq
+            sudo apt-get remove -y docker-ce docker-ce-cli containerd.io
+      - run:
+          name: "Install current Docker version and enable experimental features"
+          command: |
+            <<# parameters.experimental >>
+            mkdir $HOME/.docker
+            echo -e '{\n    "experimental":"enabled" \n}' | tee -a $HOME/.docker/config.json
+            echo -e '{\n    "experimental":true \n}' | sudo tee -a /etc/docker/daemon.json
+            <</ parameters.experimental >>
+            curl -fsSL https://get.docker.com/ | sudo sh
+            sudo usermod -aG docker $(whoami)
+  install-qemu:
+    parameters:
+      url:
+        description: "QEMU static conf file for Docker"
+        type: string
+        default: "https://github.com/computermouth/qemu-static-conf.git"
+    steps:
+      - run:
+          name: "Install QEMU support for multi-architecture builds"
+          command: |
+            sudo apt-get update -qq
+            sudo apt-get install -y qemu qemu-user-static qemu-user binfmt-support
+            git clone << parameters.url >>
+            sudo mkdir -p /lib/binfmt.d
+            sudo cp qemu-static-conf/*.conf /lib/binfmt.d/
+  install-buildx:
+    parameters:
+      url:
+        description: "Buildx release page"
+        type: string
+        default: "https://github.com/docker/buildx/releases"
+      version:
+        description: "Version of buildx release under << parameters.url >>"
+        type: string
+        default: "v0.3.1"
+      artifact:
+        description: "Buildx artifact, which should be used"
+        type: string
+        default: "buildx-v0.3.1.linux-amd64"
+    steps:
+      - run:
+          name: "Install BuildX plugin for Docker"# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
 
-restore_docker_cache: &restore_docker_cache
-  restore_cache:
-    key: compiled-{{ .Revision }}
+description: |
+  Install/configure docker with buildx to
+  cross-compile docker images and deploy them
 
-load_image_from_cache: &load_image_from_cache
-  run:
-    name: Load docker image from cache
-    command: docker load < docker-cache/base.tar
+commands:
+  recursive-checkout:
+    steps:
+      - checkout
+      - run:
+          name: "Checkout submodules"
+          command: git submodule update --init --recursive
+  update-docker:
+    parameters:
+      experimental:
+        description: "Setting Docker engine and client to experimental"
+        type: boolean
+        default: true
+    steps:
+      - run:
+          name: "Remove existing Docker installation"
+          command: |
+            sudo apt-get update -qq
+            sudo apt-get remove -y docker-ce docker-ce-cli containerd.io
+      - run:
+          name: "Install current Docker version and enable experimental features"
+          command: |
+            <<# parameters.experimental >>
+            mkdir $HOME/.docker
+            echo -e '{\n    "experimental":"enabled" \n}' | tee -a $HOME/.docker/config.json
+            echo -e '{\n    "experimental":true \n}' | sudo tee -a /etc/docker/daemon.json
+            <</ parameters.experimental >>
+            curl -fsSL https://get.docker.com/ | sudo sh
+            sudo usermod -aG docker $(whoami)
+  install-qemu:
+    parameters:
+      url:
+        description: "QEMU static conf file for Docker"
+        type: string
+        default: "https://github.com/computermouth/qemu-static-conf.git"
+    steps:
+      - run:
+          name: "Install QEMU support for multi-architecture builds"
+          command: |
+            sudo apt-get update -qq
+            sudo apt-get install -y qemu qemu-user-static qemu-user binfmt-support
+            git clone << parameters.url >>
+            sudo mkdir -p /lib/binfmt.d
+            sudo cp qemu-static-conf/*.conf /lib/binfmt.d/
+  install-buildx:
+    parameters:
+      url:
+        description: "Buildx release page"
+        type: string
+        default: "https://github.com/docker/buildx/releases"
+      version:
+        description: "Version of buildx release under << parameters.url >>"
+        type: string
+        default: "v0.3.1"
+      artifact:
+          command: |
+            curl --output docker-buildx --silent --show-error --location --fail --retry 3 \
+              "<< parameters.url >>/download/<< parameters.version >>/<< parameters.artifact >>"
+            mkdir -p ~/.docker/cli-plugins
+            mv docker-buildx ~/.docker/cli-plugins/
+            chmod a+x ~/.docker/cli-plugins/docker-buildx
 
 jobs:
-  compile_go:
-    <<: *defaults
+  buildx:
+    working_directory: ~/docker-gogs
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
-      - checkout
-      - run:
-          name: Do the compile steps
-          command: |
-            make BUILD_BASE=base base
-            mkdir -p docker-cache
-            docker save -o docker-cache/base.tar base
-      - *save_docker_cache
-  build_amd64:
-    <<: *defaults
-    steps:
-      - checkout
-      - *restore_docker_cache
-      - *load_image_from_cache
-      - run:
-          name: Build image for amd64
-          command: make BUILD_BASE=base ARCHITECTURES=amd64
-      - run:
-          name: Test image for amd64
-          command: make ARCHITECTURES=amd64 test
-      - deploy:
-          name: Push image for amd64 to dockerhub
-          command: make ARCHITECTURES=amd64 push
-  build_i386:
-    <<: *defaults
-    steps:
-      - checkout
-      - *restore_docker_cache
-      - *load_image_from_cache
-      - run:
-          name: Build image for i386
-          command: make BUILD_BASE=base ARCHITECTURES=i386
-      - run:
-          name: Test image for i386
-          command: make ARCHITECTURES=i386 test
-      - deploy:
-          name: Push image for i386 to dockerhub
-          command: make ARCHITECTURES=i386 push
-  build_arm32v6:
-    <<: *defaults
-    steps:
-      - checkout
-      - *restore_docker_cache
-      - *load_image_from_cache
-      - run:
-          name: Build image for arm32v6
-          command: make BUILD_BASE=base ARCHITECTURES=arm32v6
-      - run:
-          name: Test image for arm32v6
-          command: make ARCHITECTURES=arm32v6 test
-      - deploy:
-          name: Push image for arm32v5 to dockerhub
-          command: make ARCHITECTURES=arm32v6 push
-  build_arm64v8:
-      <<: *defaults
-      steps:
-        - checkout
-        - *restore_docker_cache
-        - *load_image_from_cache
-        - run:
-            name: Build image for arm64v8
-            command: make BUILD_BASE=base ARCHITECTURES=arm64v8
-        - run:
-            name: Test image for arm64v8
-            command: make ARCHITECTURES=arm64v8 test
-        - deploy:
-            name: Push image for arm64v8 to dockerhub
-            command: make ARCHITECTURES=arm64v8 push
-  manifest:
-    <<: *defaults
-    steps:
-      - checkout
-      - deploy:
-          name: Generate multiarch manifest and push to dockerhub
-          command: make manifest
-  badge:
-    <<: *defaults
-    steps:
-      - run:
-          name: Call microbadger's webhook
-          command: curl -X POST https://hooks.microbadger.com/images/whatever4711/gitea/2oxGzMVZlKSBC9xolckllXvTm4E=
-
-tag_filter: &tag_filter
-  filters:
-    tags:
-      only: /.*/
-
-requires_compile_and_tag: &requires_compile_and_tag
-  requires:
-    - compile_go
-  <<: *tag_filter
+      - recursive-checkout
+      - update-docker
+      - install-qemu
+      - install-buildx
+      - run: make
 
 workflows:
-  version: 2
-  build-and-deploy:
+  buildx-and-push:
     jobs:
-      - compile_go:
-          <<: *tag_filter
-      - build_amd64:
-          <<: *requires_compile_and_tag
-      - build_i386:
-          <<: *requires_compile_and_tag
-      - build_arm32v6:
-          <<: *requires_compile_and_tag
-      - build_arm64v8:
-          <<: *requires_compile_and_tag
-      - manifest:
-          requires:
-            - build_amd64
-            - build_i386
-            - build_arm32v6
-            - build_arm64v8
-          <<: *tag_filter
-      - badge:
-          requires:
-            - manifest
-          <<: *tag_filter
+      - buildx:
+          filters:
+              tags:
+                only: /.*/
