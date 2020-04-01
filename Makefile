@@ -1,5 +1,5 @@
 PLATFORMS = linux/amd64,linux/arm64,linux/arm/v7,linux/i386
-VERSION = $(shell cat gogs/templates/.VERSION)
+VERSION = $(shell cat VERSION)
 BINFMT = a7996909642ee92942dcd6cff44b9b95f08dad64
 #DOCKER_USER = test
 #DOCKER_PASS = test
