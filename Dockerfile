@@ -12,7 +12,7 @@ RUN apk add -U --no-cache build-base git nodejs npm && \
 WORKDIR ${GOPATH}/src/code.gitea.io/gitea
 
 RUN export PATH=$PATH:/go/bin/ && \
-    make clean-all build
+    make clean generate build
 
 
 
