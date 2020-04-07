@@ -1,5 +1,4 @@
 FROM golang:alpine as build
-
 ENV GOOS=linux
 ENV CGO_ENABLED=1
 ARG VERSION=master
@@ -12,25 +11,19 @@ RUN apk add -U --no-cache build-base git nodejs npm && \
 WORKDIR ${GOPATH}/src/code.gitea.io/gitea
 
 RUN export PATH=$PATH:/go/bin/ && \
-    make clean && \
-#    echo "replace github.com/go-macaron/cors v0.0.0-20190309005821-6fd6a9bfe14e9 => github.com/go-macaron/cors v0.0.0-20190418220122-6fd6a9bfe14e" >> go.mod && \
-#    echo "replace github.com/census-instrumentation/opencensus-proto v0.1.0-0.20181214143942-ba49f56771b8 => github.com/census-instrumentation/opencensus-proto v0.0.3-0.20181214143942-ba49f56771b8" >> go.mod && \
-#    GO111MODULE=on go mod vendor && \
-    make generate build
-
+    make clean-all build
 
 
 # second image to be deployed on dockerhub
 FROM alpine
 ARG TARGETPLATFORM
 ARG VERSION=master
-ARG GITEA_ARCH=amd64
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VCS_URL
 
 COPY --from=build /go/src/code.gitea.io/gitea/gitea /app/gitea/gitea
-COPY --from=build /go/src/code.gitea.io/gitea/docker /
+COPY --from=build /go/src/code.gitea.io/gitea/docker/root /
 
 RUN ln -s /app/gitea/gitea /usr/local/bin/gitea && \
     apk -U --no-cache --no-progress add \
