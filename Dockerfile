@@ -12,7 +12,11 @@ RUN apk add -U --no-cache build-base git nodejs npm && \
 WORKDIR ${GOPATH}/src/code.gitea.io/gitea
 
 RUN export PATH=$PATH:/go/bin/ && \
-    make clean generate build
+    make clean && \
+    echo "replace github.com/go-macaron/cors v0.0.0-20190309005821-6fd6a9bfe14e9 => github.com/go-macaron/cors v0.0.0-20190418220122-6fd6a9bfe14e" >> go.mod && \
+    echo "replace github.com/census-instrumentation/opencensus-proto v0.1.0-0.20181214143942-ba49f56771b8 => github.com/census-instrumentation/opencensus-proto v0.0.3-0.20181214143942-ba49f56771b8" >> go.mod && \
+    GO111MODULE=on go mod vendor && \
+    make generate build
 
 
 
