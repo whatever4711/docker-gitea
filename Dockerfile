@@ -2,8 +2,8 @@ FROM golang:alpine as build
 ENV GOOS=linux
 ENV CGO_ENABLED=1
 ARG VERSION=master
-ARG TAGS="sqlite"
-ENV TAGS "bindata $TAGS"
+ARG TAGS="sqlite sqlite_unlock_notify"
+ENV TAGS="bindata $TAGS"
 
 WORKDIR ${GOPATH}/src/code.gitea.io
 RUN apk add -U --no-cache build-base git nodejs npm && \
