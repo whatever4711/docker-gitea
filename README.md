@@ -17,13 +17,10 @@ Thereafter you can access gitea on http://localhost:3000
 
 Install `docker-compose` and run `docker-compose up -d`
 
+<iframe src="./docker-compose.yml"></iframe>
+
 ```[docker-compose.yml]
 version: '3'
-networks:
-  backend:
-    driver: bridge
-  frontend:
-    driver: bridge
 
 volumes:
   git:
@@ -32,47 +29,59 @@ volumes:
 services:
   postgres:
     image: postgres:alpine
-    networks:
-      - backend
     volumes:
       - db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=gitea
-      - POSTGRES_PASSWORD=test
-      - POSTGRES_DB=gitea
+      - POSTGRES_USER=${DB_USER:-gitea}
+      - POSTGRES_PASSWORD=${DB_PASSWD:-test}
+      - POSTGRES_DB=${DB_NAME:-gitea}
     labels:
       - traefik.enable=false
 
   gitea:
     image: whatever4711/gitea
+    environment:
+      - SSH_DOMAIN=gitea.localdomain
+      - SSH_PORT=2222
+      - SSH_LISTEN_PORT=22
+      - DB_TYPE=postgres
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME:-gitea}
+      - DB_USER=${DB_USER:-gitea}
+      - DB_PASSWD=${DB_PASSWD:-test}
     depends_on:
       - postgres
     volumes:
       - git:/data
-    ports:
-      - 22:22
-    networks:
-      - frontend
-      - backend
     labels:
-      - traefik.backend=gitea
-      - traefik.port=3000
-      - traefik.frontend.rule=Host:gitea.localdomain
-      - traefik.docker.network=dockergitea_frontend
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea-web.rule=Host(`gitea.localdomain`)"
+      - "traefik.http.routers.gitea-web.entrypoints=web"
+      - "traefik.http.routers.gitea-web.service=gitea-web-svc"
+      - "traefik.http.services.gitea-web-svc.loadbalancer.server.port=3000"
+      - "traefik.tcp.routers.gitea-ssh.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.gitea-ssh.entrypoints=ssh"
+      - "traefik.tcp.routers.gitea-ssh.service=gitea-ssh-svc"
+      - "traefik.tcp.services.gitea-ssh-svc.loadbalancer.server.port=22"
 
   traefik:
     image: traefik
-    command: --docker --docker.domain=localdomain --docker.watch --web
+    command:
+      #- "--log.level=DEBUG"
+      - "--api=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.ssh.address=:2222"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - 80:80
-      - 443:443
-    networks:
-      - frontend
+      - "80:80"
+      - "2222:2222"
     labels:
-      - traefik.backend=traefik
-      - traefik.port=8080
-      - traefik.frontend.rule=Host:traefik.localdomain
-      - traefik.docker.network=dockergitea_frontend
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-http.entrypoints=web"
+      - "traefik.http.routers.traefik-http.rule=Host(`traefik.localdomain`)"
+      - "traefik.http.routers.traefik-http.service=api@internal"
 ```
