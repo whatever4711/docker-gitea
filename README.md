@@ -17,8 +17,6 @@ Thereafter you can access gitea on http://localhost:3000
 
 Install `docker-compose` and run `docker-compose up -d`
 
-<iframe src="./docker-compose.yml"></iframe>
-
 ```[docker-compose.yml]
 version: '3'
 
