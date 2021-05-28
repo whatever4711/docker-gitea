@@ -41,7 +41,7 @@ jobs:
           version: 20.10.2
       - install_dependencies
       - init_buildx
-      - run: make
+      - run: make build
 
 workflows:
   buildx-and-push:
