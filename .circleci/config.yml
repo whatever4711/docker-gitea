@@ -41,7 +41,10 @@ jobs:
           version: 20.10.2
       - install_dependencies
       - init_buildx
-      - run: make build
+      - run:
+          name: Starting Multiarch Build
+          no_output_timeout: 30m
+          command: make build
 
 workflows:
   buildx-and-push:
