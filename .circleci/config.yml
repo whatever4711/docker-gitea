@@ -43,7 +43,7 @@ jobs:
       - init_buildx
       - run:
           name: Starting Multiarch Build
-          no_output_timeout: 30m
+          no_output_timeout: 60m
           command: make build
 
 workflows:
