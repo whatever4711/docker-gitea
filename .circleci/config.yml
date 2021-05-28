@@ -32,13 +32,13 @@ commands:
             apk add --no-cache << parameters.apk_packages >>
 jobs:
   buildx:
-    working_directory: ~/docker-pdf2pptx
+    working_directory: ~/docker-gitea
     docker:
       - image: drpsychick/dind-buildx:latest
     steps:
       - checkout
       - setup_remote_docker:
-          version: 20.10.6
+          version: 20.10.2
       - install_dependencies
       - init_buildx
       - run:
