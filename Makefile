@@ -30,6 +30,7 @@ build:
 			--build-arg VCS_REF=$(shell git rev-parse --short HEAD) \
 			--build-arg VCS_URL=$(shell git config --get remote.origin.url) \
 			--build-arg VERSION=$(VERSION) \
+			--progress plain \
 			--platform $(PLATFORMS) \
 			--push \
 			-t $(REPO):$(TAG) .
