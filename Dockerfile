@@ -1,7 +1,7 @@
 FROM golang:alpine as build
 ENV GOOS=linux
 ENV CGO_ENABLED=1
-ARG VERSION=master
+ARG VERSION=main
 ARG TAGS="sqlite sqlite_unlock_notify"
 ENV TAGS="bindata $TAGS"
 
@@ -12,7 +12,7 @@ WORKDIR ${GOPATH}/src/code.gitea.io/gitea
 
 RUN export PATH=$PATH:/go/bin/ && \
     npm install -g npm && \
-    npm cache clean && \
+    npm cache verify && \
     make clean-all build
 
 
