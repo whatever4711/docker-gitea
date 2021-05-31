@@ -1,17 +1,18 @@
 FROM golang:alpine as build
 ENV GOOS=linux
 ENV CGO_ENABLED=1
-ARG VERSION=master
+ARG VERSION=main
 ARG TAGS="sqlite sqlite_unlock_notify"
 ENV TAGS="bindata $TAGS"
 
 WORKDIR ${GOPATH}/src/code.gitea.io
-RUN apk add -U --no-cache build-base git nodejs npm && \
-    git clone --branch ${VERSION} --depth 1 https://github.com/go-gitea/gitea.git
+RUN apk add -U --no-cache build-base git nodejs npm
+RUN git clone --branch ${VERSION} --depth 1 https://github.com/go-gitea/gitea.git
 WORKDIR ${GOPATH}/src/code.gitea.io/gitea
 
-RUN export PATH=$PATH:/go/bin/ && \
-    make clean-all build
+RUN npm install -g npm
+RUN npm cache verify
+RUN make clean-all build
 
 
 # second image to be deployed on dockerhub
